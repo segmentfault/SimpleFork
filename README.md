@@ -30,7 +30,7 @@ $sf->master(function ($sf) {
 
 #### 一次调用的时候(比如有一个很大的工作需要分片处理)
 
-```
+```php
 $sf = new SimpleFork(5, 'map-reduce');
 
 $sf->master(function ($sf) {
