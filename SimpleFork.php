@@ -1,13 +1,11 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: qining
- * Date: 16/7/27
- * Time: 下午4:34
- */
 
 /**
- * Class SimpleFork
+ * SimpleFork
+ *
+ * @copyright Copyright (c) 2016 SegmentFault Team. (http://segmentfault.com)
+ * @author Joyqi <joyqi@segmentfault.com>
+ * @license MIT License
  */
 class SimpleFork {
     /**
@@ -34,6 +32,11 @@ class SimpleFork {
      * @var int
      */
     private $_limit = 2;
+
+    /**
+     * @var int
+     */
+    private $_busy = 0;
 
     /**
      * @var callable
@@ -117,7 +120,7 @@ class SimpleFork {
     {
         if (!$this->_isForked) {
             if ($sleep > 0) {
-                usleep($sleep);
+                usleep($sleep * 1000);
             }
             
             $this->check();
@@ -125,6 +128,31 @@ class SimpleFork {
         }
         
         return false;
+    }
+
+    /**
+     * @param int $timeout
+     */
+    public function wait($timeout = 0)
+    {
+        $start = microtime(true);
+        
+        while (true) {
+            $this->check();
+            $interval = (microtime(true) - $start) * 1000;
+            
+            if ($this->_busy == 0) {
+                return;
+            }
+            
+            // timeout
+            if ($timeout > 0 && $interval >= $timeout) {
+                $this->killallBusyProcesses();
+                return;
+            }
+            
+            usleep(10000);
+        }
     }
 
     /**
@@ -234,6 +262,7 @@ class SimpleFork {
 
                 if (!empty($result)) {
                     $process['status'] = true;
+                    $this->_busy --;
                     
                     if (!empty($process['cb'])) {
                         $process['cb'](json_decode($result, true));
@@ -258,11 +287,30 @@ class SimpleFork {
 
         if (!$status['running']) {
             echo stream_get_contents($process['pipes'][2]);
+            
             @proc_close($process['res']);
+            $this->log('close ' . $process['pid']);
 
-            $this->log('close');
+            if (!$process['status']) {
+                $this->_busy --;
+            }
 
             $process = $this->createProcess();
+        }
+    }
+
+    /**
+     * kill all
+     */
+    private function killallBusyProcesses()
+    {
+        foreach ($this->_processes as &$process) {
+            if (!$process['status']) {
+                @proc_close($process['res']);
+                $this->log('close ' . $process['pid']);
+                $process = $this->createProcess();
+                $this->_busy --;
+            }
         }
     }
 
@@ -278,6 +326,7 @@ class SimpleFork {
 
             if (isset($this->_processes[$index])) {
                 $this->_processes[$index]['status'] = false;
+                $this->_busy ++;
                 return $this->_processes[$index];
             }
 
