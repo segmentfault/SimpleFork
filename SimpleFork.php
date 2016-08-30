@@ -161,7 +161,7 @@ class SimpleFork {
     public function log($str)
     {
         $args = func_get_args();
-        $line = call_user_func_array('sprintf', $args);
+        $line = count($args) > 1 ? call_user_func_array('sprintf', $args) : $str;
         
         $line = date('Y-m-d H:i:s') . ' [' . ($this->_isForked ? 'slave' : 'master') 
             . ':' . getmypid() . '] ' . $line;
