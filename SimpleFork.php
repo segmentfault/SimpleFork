@@ -49,15 +49,21 @@ class SimpleFork {
     private $_slaveHandler = NULL;
 
     /**
+     * @var string
+     */
+    private $_prefix = NULL;
+
+    /**
      * SimpleFork constructor.
      * @param int $limit
      * @param string $name
      */
-    public function __construct($limit = 2, $name = 'SimpleFork')
+    public function __construct($limit = 2, $name = 'SimpleFork', $prefix = NULL)
     {
         $opt = getopt('m:');
         $this->_name = $name;
         $this->_limit = $limit;
+        $this->_prefix = $prefix;
         
         if (isset($opt['m']) && $opt['m'] == 'slave') {
             $this->_isForked = true;
@@ -354,7 +360,7 @@ class SimpleFork {
      */
     private function getCmd()
     {
-        $prefix = isset($_SERVER['_']) ? $_SERVER['_'] : '/usr/bin/env php';
+        $prefix = empty($this->_prefix) ? (isset($_SERVER['_']) ? $_SERVER['_'] : '/usr/bin/env php') : $this->_prefix;
         return $prefix . ' ' . $_SERVER['PHP_SELF'] . ' -mslave';
     }
 }
