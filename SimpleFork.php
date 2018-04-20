@@ -313,7 +313,7 @@ class SimpleFork {
     private function killProcess($process)
     {
         if (function_exists('posix_kill')) {
-            posix_kill($process['pid']);
+            posix_kill($process['pid'], 9);
         } else {
             @proc_terminate($process['res']);
         }
