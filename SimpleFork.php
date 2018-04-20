@@ -288,7 +288,7 @@ class SimpleFork {
         if (!$status['running']) {
             echo stream_get_contents($process['pipes'][2]);
             
-            @proc_close($process['res']);
+            $this->killProcess($process);
             $this->log('close ' . $process['pid']);
 
             if (!$process['status']) {
@@ -300,13 +300,27 @@ class SimpleFork {
     }
 
     /**
+     * kill process
+     *
+     * @param $process
+     */
+    private function killProcess($process)
+    {
+        if (function_exists('posix_kill')) {
+            posix_kill($process['pid']);
+        } else {
+            @proc_terminate($process['res']);
+        }
+    }
+
+    /**
      * kill all
      */
     private function killallBusyProcesses()
     {
         foreach ($this->_processes as &$process) {
             if (!$process['status']) {
-                @proc_close($process['res']);
+                $this->killProcess($process);
                 $this->log('close ' . $process['pid']);
                 $process = $this->createProcess();
                 $this->_busy --;
